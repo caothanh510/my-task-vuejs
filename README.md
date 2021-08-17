@@ -1,6 +1,6 @@
 
 ![Screen Shot 2021-08-17 at 21 24 57](https://user-images.githubusercontent.com/34502476/129744046-dd78e321-e7e5-4486-9d6d-e203711b1119.png)
-# my-task-vuejs
+# My Task Vuejs 3
 
 ## Project setup
 ```
