@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import { ref, vue } from "vue";
+import log from "./log_error"
 import { ServiceFactory } from "./../services/service.factory"
 const TaskServices = ServiceFactory.get("task")
 
@@ -10,31 +11,38 @@ export function Task() {
       tasks: [],
       currentTask: null,
       currentIndex: -1,
-      title: "",
+      search_title: "",
       task: {
         id: null,
         title: "",
         description: "",
         published: false
-       },
+      },
       is_add_task: true
     }
   );
 
   // Task List
-  function retrieveTasks() {
-    TaskServices.getAll().onSnapshot((snapshotChange) => {
-        var results = []
-        snapshotChange.forEach((doc) => {
-          results.push({
-            id: doc.id,
-            title: doc.data().title,
-            description: doc.data().description,
-            published: doc.data().published,
+  const retrieveTasks = async () => {
+    try{
+      var resp = await TaskServices.getAll()
+      if(resp){
+        resp.onSnapshot((docs) => {
+          let results = []
+          docs.forEach((doc) => {
+            results.push({
+              id: doc.id,
+              title: doc.data().title,
+              description: doc.data().description,
+              published: doc.data().published,
+            });
           });
-        });
-        task_data.value.tasks = results;
-    });
+          task_data.value.tasks = results;
+        })
+      }
+    }catch(e){
+      console.log(e)
+    }
   }
 
   function setActiveTask(task, index) {
@@ -43,21 +51,23 @@ export function Task() {
     task_data.value.currentIndex = task ? index : -1;
   }
   
-  function deleteTask() {
-    TaskServices.delete(task_data.value.currentTask.id)
-      .then(() => {
-        task_data.value.currentTask = null;
-        task_data.value.message = 'The status was deleted successfully!';
-      })
-      .catch(e => {
-        console.log(e);
-      });
+  const deleteTask = async (id) => {
+    var [err, resp] = await log(TaskServices.delete(id))
+
+    if (err) {
+      console.log('Error:', err);
+    }else{
+      task_data.value.currentTask = null;
+      task_data.value.message = 'The status was deleted successfully!';
+    }
   }
 
-  function searchTitle() {
-    TaskServices.search('title', task_data.value.title).then(response => {
-      var results = []
-      response.docs.forEach((doc) => {
+  const searchTitle = async () => {
+    var [err, resp] = await log(TaskServices.search('title', task_data.value.search_title))
+
+    if(resp){
+      let results = []
+      resp.docs.forEach((doc) => {
         results.push({
           id: doc.id,
           title: doc.data().title,
@@ -67,77 +77,78 @@ export function Task() {
       });
       task_data.value.tasks = results;
       setActiveTask(null);
-    })
-    .catch(e => {
-      console.log(e);
-    });
+    }
+
+    if (err) {
+      console.log('Error:', err);
+    }
   }
 
   // Task
-  function getTask(id) {
-    TaskServices.edit(id)
-      .then(response => {
-        task_data.value.currentTask = {
-          id: response.id,
-          title: response.data().title,
-          description: response.data().description,
-          published: response.data().published
-        }
-        console.log('task_data.value.currentTask', task_data.value.currentTask)
-      })
-      .catch(e => {
-        console.log(e);
-      });
+  const getTask = async (id) => {
+    var [err, resp] = await log(TaskServices.edit(id))
+
+    if(resp){
+      task_data.value.currentTask = {
+        id: resp.id,
+        title: resp.data().title,
+        description: resp.data().description,
+        published: resp.data().published
+      }
+    }
+
+    if (err) {
+      console.log('Error:', err);
+    }
   }
 
-  function updatePublished(status) {
-    var data = {
+  const updatePublished = async (status) => {
+    let data = {
       id: task_data.value.currentTask.id,
       title: task_data.value.currentTask.title,
       description: task_data.value.currentTask.description,
       published: status
     };
+    var [err, resp] = await log(TaskServices.update(data.id, data))
 
-    TaskServices.update(task_data.value.currentTask.id, data)
-      .then(() => {
-        task_data.value.currentTask.published = status;
-        task_data.value.message = 'The status was ' + (status ? 'published' : 'unpublished') + ' successfully!';
-        setTimeout(function(){ window.location = '/' }, 1000);
-      })
-      .catch(e => {
-        console.log(e);
-      });
+    if (err) {
+      console.log('Error:', err);
+    }else{
+      task_data.value.currentTask.published = status;
+      task_data.value.message = 'The status was ' + (status ? 'published' : 'unpublished') + ' successfully!';
+      setTimeout(function(){ window.location = '/' }, 1000);
+    }
   }
 
-  function updateTask() {
-    TaskServices.update(task_data.value.currentTask.id, task_data.value.currentTask)
-      .then(() => {
-        task_data.value.message = 'The task was updated successfully!';
-        setTimeout(function(){ window.location = '/' }, 1000);
-      })
-      .catch(e => {
-        console.log(e);
-      });
+  const updateTask = async () => {
+    var [err, resp] = await log(TaskServices.update(task_data.value.currentTask.id, task_data.value.currentTask))
+
+    if (err) {
+      console.log('Error:', err);
+    }else{
+      task_data.value.message = 'The task was updated successfully!';
+      setTimeout(function(){ window.location = '/' }, 1000);
+    }
   }
 
-  // Add Task
-  function saveTask() {
-    var data = {
+  const saveTask = async () => {
+    let data = {
       title: task_data.value.task.title,
       description: task_data.value.task.description
     };
+    var [err, resp] = await log(TaskServices.create(data))
 
-    TaskServices.create(data).then(() => {
+    if(resp){
       task_data.value.is_add_task = false;
       task_data.value.task = {};
       task_data.value.message = 'The status was created successfully!';
-      
       setTimeout(function(){ window.location = '/' }, 1000);
-    }).catch((error) => {
-        console.log(error);
-    });
+    }
+
+    if (err) {
+      console.log('Error:', err);
+    }
   }
-  
   
   function newTask() {
     task_data.value.is_add_task = true;
@@ -146,16 +157,13 @@ export function Task() {
 
   return {
     task_data,
-    // Task List
     retrieveTasks,
     setActiveTask,
     deleteTask,
     searchTitle,
-    // Task
     getTask,
     updatePublished,
     updateTask,
-    // Add Task
     saveTask,
     newTask
   };

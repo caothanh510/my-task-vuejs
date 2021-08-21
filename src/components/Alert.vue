@@ -14,7 +14,7 @@ export default {
     }
   },
   setup(props) {
-    var messageRef = toRefs(props).message
+    let messageRef = toRefs(props).message
     return {
       messageRef
     };

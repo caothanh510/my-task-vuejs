@@ -4,7 +4,7 @@
     <div class="col-md-12">
       <div class="input-group mb-3">
         <input type="text" class="form-control" placeholder="Search by title"
-          v-model="task_data.title"/>
+          v-model="task_data.search_title"/>
         <div class="input-group-append">
           <button class="btn btn-primary" type="button"
             @click="searchTitle"
@@ -49,7 +49,7 @@
         </div>
 
         <router-link :to="'/tasks/' + task_data.currentTask.id" class="btn btn-sm btn-warning">Edit</router-link>
-        <button style="margin-left: 5px;" @click="deleteTask()" class="btn btn-sm btn-danger">Delete</button>
+        <button style="margin-left: 5px;" @click="deleteTask(task_data.currentTask.id)" class="btn btn-sm btn-danger">Delete</button>
       </div>
       <div v-else>
         <br />
